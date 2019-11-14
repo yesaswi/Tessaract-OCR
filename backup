@@ -10,48 +10,48 @@ const config = {
 };
 
 const driver = new Builder().forBrowser("chrome").build();
-var nextpass = 0;
-var baseimg = "a";
-var cropimg = "b";
 
 async function login() {
   await driver.get("http://exams.kluniversity.in/");
   await driver
     .findElement(By.id("MainContent_Txtusername"))
-    .sendKeys("170031332");
+    .sendKeys("170030452");
 }
 
 async function password() {
-  driver.findElement(By.id("MainContent_Txtpassword")).clear();
-  let pass = ["21/04/2000", "30/10/1999"];
-  console.log(nextpass);
   await driver
     .findElement(By.id("MainContent_Txtpassword"))
-    .sendKeys(pass[nextpass]);
+    .sendKeys("30/10/1999");
 }
 
 async function captchaCap() {
-  //driver.findElement(By.id("MainContent_Txtusername"));
+  driver.findElement(By.id("MainContent_Txtusername"));
   await driver.takeScreenshot().then(function(data) {
-    fs.writeFileSync(baseimg, data, "base64");
+    fs.writeFileSync("img.png", data, "base64");
   });
-}
+  let originalImage = "img.png";
+  let outputImage = "croppedImage.jpg";
 
-async function captchaCrop() {
-  await sharp(baseimg)
+  await sharp(originalImage)
     .extract({ width: 520, height: 120, left: 800, top: 950 })
-    .toFile(cropimg);
+    .toFile(outputImage)
+    .then(function(new_file_info) {
+      console.log("Image cropped and saved");
+    })
+    .catch(function(err) {
+      console.log("An error occured");
+    });
 }
 
 async function captchaEnter() {
-  driver.findElement(By.id("MainContent_txtCaptcha")).clear();
   await tesseract
-    .recognize(cropimg, config)
+    .recognize("croppedImage.jpg", config)
     .then(text => {
       console.log("Result:", text);
       text = text.toUpperCase();
+      // console.log(text)
       let finaltext = "";
-      for (let i = 0; i < text.length && finaltext.length < 5; i++) {
+      for (let i = 0; i < text.length; i++) {
         if (
           (text[i] >= "A" && text[i] <= "Z") ||
           (text[i] >= "0" && text[i] <= "9")
@@ -60,7 +60,6 @@ async function captchaEnter() {
       }
       console.log(finaltext);
       driver.findElement(By.id("MainContent_txtCaptcha")).sendKeys(finaltext);
-      finaltext = "";
     })
     .catch(error => {
       console.log(error.message);
@@ -70,37 +69,14 @@ async function captchaEnter() {
 
 async function clickLogin() {
   await driver.findElement(By.id("MainContent_Button1")).click();
-  baseimg += "a";
-  cropimg += "b";
-  // fs.unlink("b", function(err) {
-  //   if (err) throw err;
-  //   // if no error, file has been deleted successfully
-  //   console.log("File deleted!");
-  // });
-  // fs.unlink("a", function(err) {
-  //   if (err) throw err;
-  //   // if no error, file has been deleted successfully
-  //   console.log("File deleted!");
-  // });
-}
-
-async function callfuck() {
-  await captchaCap();
-  await captchaCrop();
-  await captchaEnter();
-  await clickLogin();
 }
 
 async function main() {
   await login();
   await password();
-  await callfuck();
-  if (await driver.findElement(By.id("MainContent_lblwarning"))) {
-    await new Promise(done => setTimeout(done, 3800));
-    nextpass++;
-    await password();
-    await callfuck();
-  }
+  await captchaCap();
+  await captchaEnter();
+  await clickLogin();
 }
 
 main();
