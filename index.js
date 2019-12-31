@@ -23,7 +23,7 @@ async function login() {
 
 async function password() {
   driver.findElement(By.id("MainContent_Txtpassword")).clear();
-  let pass = ["21/04/2000", "30/10/1999"];
+  let pass =[];
   console.log(nextpass);
   await driver
     .findElement(By.id("MainContent_Txtpassword"))
